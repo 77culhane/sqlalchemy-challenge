@@ -1,5 +1,5 @@
 import numpy as np
-
+from datetime import datetime
 import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
@@ -26,7 +26,7 @@ Station = Base.classes.station
 # Flask Setup
 #################################################
 app = Flask(__name__)
-
+session = Session(engine)
 
 #################################################
 # Flask Routes
@@ -41,17 +41,14 @@ def welcome():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/temp/start/end"
+        f"/api/v1.0/temp/start/end<br/>"
     )
 
 
 @app.route("/api/v1.0/precipitation")
 def precipitation():
-    # Create our session (link) from Python to the DB
-    session = Session(engine)
 
-    """Return a list of all passenger names"""
-    # Query all passengers
+    # Query all prcp values
     last_12m = dt.date(2017, 8, 23) - dt.timedelta(days=365)
     results = session.query(Measurement.date, Measurement.prcp).filter(Measurement.date >= last_12m).all()
 
@@ -66,46 +63,47 @@ def precipitation():
 
 @app.route("/api/v1.0/station")
 def station():
-    # Create our session (link) from Python to the DB
-    session = Session(engine)
-
-    """Return a list of passenger data including the name, age, and sex of each passenger"""
-    # Query all passengers
-    
-
     results = session.query(Station).all()
     session.close()
 
-    # Create a dictionary from the row data and append to a list of all_stations
-    all_stations = []
+    # Create a dictionary from the row data and append to a list of stations
+    stations = []
     for stationvar in results:
         station_dict = {}
         station_dict["station"] = stationvar.station
-        all_stations.append(station_dict)
+        stations.append(station_dict)
 
-    return jsonify(all_stations)
+    return jsonify(stations)
 
 @app.route("/api/v1.0/tobs")
 def tobs():
-    # Create our session (link) from Python to the DB
-    session = Session(engine)
-
-    """Return a list of passenger data including the name, age, and sex of each passenger"""
-    # Query all passengers
-    
-
-    results = session.query(Measurement.tobs).all()
+    results = session.query(Measurement.tobs).filter(Measurement.date >= last_12m).all()
     session.close()
 
-    # Create a dictionary from the row data and append to a list of all_stations
-    all_stations = []
-    for stationvar in results:
-        station_dict = {}
-        station_dict["station"] = stationvar.station
-        all_stations.append(station_dict)
+    # Create a dictionary from the row data and append to a list of tobs
+    temp_list = []
+    for temp in results:
+        temp_dict = {}
+        temp_dict["Temperatures"] = float(temp)
+        temp_list.append(temp_dict)
 
-    return jsonify(all_stations)
+    return jsonify(temp_list)
 
+@app.route("/api/v1.0/temp/<start>")
+@app.route("/api/v1.0/temp/<start>/<end>")
+def stats(start=None, end=None):
+    session = Session(engine)
+    
+    if not end:
+        results = session.query(*[[func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)]]).filter(Measurement.date >= start).all()
+        temps = list(np.ravel(results))
+        return jsonify(temps)
+
+    results = session.query(*[[func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)]]).filter(Measurement.date >= start).filter(Measurement.date <= end).all()
+
+    temps = list(np.ravel(results))
+    return jsonify(temps)
+    return jsonify(trip_temps)
 
 if __name__ == '__main__':
     app.run(debug=True)

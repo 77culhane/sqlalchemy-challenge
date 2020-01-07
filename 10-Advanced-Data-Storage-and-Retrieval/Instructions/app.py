@@ -1,6 +1,11 @@
 import numpy as np
+<<<<<<< HEAD
 from datetime import datetime as dt
 #import sqlalchemy
+=======
+from datetime import datetime
+import sqlalchemy
+>>>>>>> 658a4db73a71e302a050889784277428a0f8e882
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
@@ -77,9 +82,15 @@ def station():
 
 @app.route("/api/v1.0/tobs")
 def tobs():
+<<<<<<< HEAD
     last_12m = dt.date(2017, 8, 23) - dt.timedelta(days=365)
     results = session.query(Measurement.tobs).filter(Measurement.date >= last_12m).all()
     session.close()
+=======
+    results = session.query(Measurement.tobs).filter(Measurement.date >= last_12m).all()
+    session.close()
+
+>>>>>>> 658a4db73a71e302a050889784277428a0f8e882
     # Create a dictionary from the row data and append to a list of tobs
     temp_list = []
     for temp in results:
